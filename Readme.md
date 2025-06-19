@@ -54,3 +54,8 @@ Build distribution files and deploy on `github`, `render`, `vercel`, `netflix` a
 # Deploy BE
 
 Build and deploy nodejs express to `Render` with security .env, `service-account.json`
+
+# Domain
+
+fe-domain = https://hoale240803.github.io/vue-google-sheet/
+api = https://vue-google-sheet.vercel.app/api
