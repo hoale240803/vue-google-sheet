@@ -33,11 +33,11 @@
 
 <script setup>
 import { computed, onMounted, ref } from 'vue';
+import GoogleSheetService from '../services/GoogleSheetService.ts';
 import CustomerForm from './CustomerForm.vue';
 import CustomerList from './CustomerList.vue';
 import MessageBox from './MessageBox.vue';
 import SearchFilter from './SearchFilter.vue';
-import GoogleSheetService from '../services/GoogleSheetService.ts';
 
 // Reactive state
 const customers = ref([]);
@@ -196,7 +196,7 @@ h1,p {
 }
 
 .yellow-color{
-  color: green;
+  color:purple;
   z-index: 1;
 }
 
