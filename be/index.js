@@ -1,7 +1,5 @@
 // backend/index.js
 const { google } = require("googleapis");
-const path = require("path");
-const serviceAccount = require(path.join(__dirname, "service-account.json"));
 
 const express = require("express");
 const axios = require("axios");
@@ -10,7 +8,13 @@ require("dotenv").config({ path: __dirname + "/.env" });
 
 const app = express();
 const PORT = 3001;
-
+const serviceAccountBase64 = process.env.GOOGLE_SERVICE_ACCOUNT;
+if (!serviceAccountBase64) {
+  throw new Error("GOOGLE_SERVICE_ACCOUNT env variable is not set");
+}
+const serviceAccount = JSON.parse(
+  Buffer.from(serviceAccountBase64, "base64").toString("utf8")
+);
 app.use(cors()); // allow Vue frontend to access API
 app.use(express.json()); // for parsing application/json
 
