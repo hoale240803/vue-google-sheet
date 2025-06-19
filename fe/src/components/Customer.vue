@@ -196,7 +196,7 @@ h1,p {
 }
 
 .yellow-color{
-  color: darkgoldenrod;
+  color: greenyellow;
   z-index: 1;
 }
 
