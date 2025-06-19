@@ -7,5 +7,5 @@ export default defineConfig({
   server: {
     port: 8080,
   },
-  base: "vue-google-sheet",
+  base: "/vue-google-sheet/",
 });
