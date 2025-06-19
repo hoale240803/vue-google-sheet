@@ -8,15 +8,36 @@ require("dotenv").config({ path: __dirname + "/.env" });
 
 const app = express();
 const PORT = 3001;
-const serviceAccountBase64 = process.env.GOOGLE_SERVICE_ACCOUNT;
-if (!serviceAccountBase64) {
-  throw new Error("GOOGLE_SERVICE_ACCOUNT env variable is not set");
-}
-const serviceAccount = JSON.parse(
-  Buffer.from(serviceAccountBase64, "base64").toString("utf8")
-);
+
+// const serviceAccountBase64 = process.env.GOOGLE_SERVICE_ACCOUNT;
+// if (!serviceAccountBase64) {
+//   throw new Error("GOOGLE_SERVICE_ACCOUNT env variable is not set");
+// }
+// const serviceAccount = JSON.parse(
+//   Buffer.from(serviceAccountBase64, "base64").toString("utf8")
+// );
+
 app.use(cors()); // allow Vue frontend to access API
 app.use(express.json()); // for parsing application/json
+
+const serviceAccountBase64 = process.env.GOOGLE_SERVICE_ACCOUNT;
+if (!serviceAccountBase64) {
+  throw new Error("GOOGLE_SERVICE_ACCOUNT environment variable is not set");
+}
+
+let serviceAccount;
+try {
+  const decodedJson = Buffer.from(serviceAccountBase64, "base64").toString(
+    "utf8"
+  );
+  console.log("Decoded JSON:", decodedJson); // Debug: Log the decoded JSON
+  serviceAccount = JSON.parse(decodedJson);
+  console.log("Parsed Service Account:", serviceAccount); // Debug: Log the parsed object
+} catch (error) {
+  throw new Error(
+    "Failed to decode or parse GOOGLE_SERVICE_ACCOUNT: " + error.message
+  );
+}
 
 app.get("/api/sheet", async (req, res) => {
   const { GOOGLE_API_KEY, SPREADSHEET_ID, SHEET_RANGE } = process.env;
