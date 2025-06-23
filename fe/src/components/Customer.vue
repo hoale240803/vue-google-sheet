@@ -1,35 +1,38 @@
 <template>
-  <div class="min-h-screen bg-gradient-to-br from-purple-100 to-indigo-200 p-8 font-sans antialiased flex flex-col items-center yellow-color">
-    <!-- Message Box Component -->
-    <MessageBox :message="message" />
+  <div class="customer-bg min-h-screen flex flex-col items-center justify-center py-12 px-4">
+    <div class="customer-card w-full max-w-4xl bg-white rounded-3xl shadow-2xl p-10 flex flex-col items-center">
+      <!-- Message Box Component -->
+      <MessageBox :message="message" />
 
-    <!-- Page Title -->
-    <h1 class="text-4xl font-bold text-gray-800 mb-8 mt-4">Customer Management (Vue.js)</h1>
+      <!-- Page Title -->
+      <h1 class="text-4xl font-bold text-gray-800 mb-8 mt-2 text-center">Customer Management (Vue.js)</h1>
 
-    <!-- Customer Form Component -->
-    <CustomerForm
-      :customer-to-edit="customerToEdit"
-      :is-editing="isEditing"
-      @save-customer="handleSaveCustomer"
-      @cancel-edit="handleCancelEdit"
-      @show-message="showMessage"
-    />
+      <!-- Customer Form Component -->
+      <CustomerForm
+        :customer-to-edit="customerToEdit"
+        :is-editing="isEditing"
+        @save-customer="handleSaveCustomer"
+        @cancel-edit="handleCancelEdit"
+        @show-message="showMessage"
+      />
 
-    <!-- Search and Filter Component -->
-    <SearchFilter
-      v-model:search-query="searchQuery"
-      v-model:min-amount="minAmount"
-      v-model:max-amount="maxAmount"
-    />
+      <!-- Search and Filter Component -->
+      <SearchFilter
+        v-model:search-query="searchQuery"
+        v-model:min-amount="minAmount"
+        v-model:max-amount="maxAmount"
+      />
 
-    <!-- Customer List Component -->
-    <CustomerList
-      :customers="filteredCustomers"
-      @edit-customer="handleEditCustomer"
-      @delete-customer="handleDeleteCustomer"
-    />
+      <!-- Customer List Component -->
+      <CustomerList
+        :customers="filteredCustomers"
+        @edit-customer="handleEditCustomer"
+        @delete-customer="handleDeleteCustomer"
+      />
+    </div>
   </div>
 </template>
+
 
 <script setup>
 import { computed, onMounted, ref } from 'vue';
@@ -186,18 +189,40 @@ const handleCancelEdit = () => {
 </script>
 
 <style scoped>
-/* Scoped styles for the Customer component */
-body {
-  font-family: 'Inter', sans-serif;
+.customer-bg {
+  min-height: 100vh;
+  width: 100vw;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #f3e8ff 0%, #e0e7ff 100%);
 }
 
-h1,p {
-  color: red;
+.customer-card {
+  background: #fff;
+  border-radius: 2rem;
+  box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
+  padding: 2.5rem 2rem;
+  width: 100%;
+  max-width: 900px;
+  margin: 2rem 0;
+  display: flex;
+  flex-direction: column;
+
+  align-items: center;
 }
 
-.yellow-color{
-  color: greenyellow;
-  z-index: 1;
+h1 {
+  color: #3730a3;
+  margin-bottom: 2rem;
+  margin-top: 0.5rem;
+  text-align: center;
 }
 
+@media (max-width: 600px) {
+  .customer-card {
+    padding: 1rem 0.5rem;
+    border-radius: 1rem;
+  }
+}
 </style>
