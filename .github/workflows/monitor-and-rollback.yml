@@ -1,0 +1,29 @@
+# .github/workflows/monitor-and-rollback.yml
+name: Monitor and Rollback
+
+on:
+  workflow_run:
+    workflows: ["Deploy FE to GitHub Pages"]
+    types:
+      - completed
+
+jobs:
+  check-errors:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Query Grafana Loki for error rate
+        run: |
+          # Replace with your actual query and API call
+          ERROR_RATIO=$(curl -u "YOUR_USERNAME:YOUR_API_KEY" \
+            -G --data-urlencode 'query=sum(rate({job="vue-google-sheet-be"} |= "error" [1m])) / sum(rate({job="vue-google-sheet-be"} [1m]))' \
+            "https://logs-prod3.grafana.net/loki/api/v1/query" | jq '.data.result[0].value[1]' | xargs)
+          echo "Error ratio: $ERROR_RATIO"
+          if (( $(echo "$ERROR_RATIO > 0.05" | bc -l) )); then
+            echo "Error ratio too high, triggering rollback"
+            exit 1
+          fi
+      - name: Rollback if error ratio too high
+        if: failure()
+        run: |
+          # Add your rollback logic here, e.g., redeploy previous commit
+          echo "Rolling back to previous version..."
