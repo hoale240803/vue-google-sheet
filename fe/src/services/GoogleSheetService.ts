@@ -21,5 +21,14 @@ export default {
       throw error;
     }
   },
+  async deleteCustomer(customerId: number) {
+    try {
+      const response = await axios.delete(`${API_BASE_URL}/sheet/${customerId}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error deleting customer:', error);
+      throw error;
+    }
+  },
   // You can add more methods here for POST/PUT/DELETE if needed
 };

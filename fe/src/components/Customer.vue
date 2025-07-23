@@ -174,11 +174,19 @@ const handleEditCustomer = (customer) => {
   isEditing.value = true;
 };
 
-const handleDeleteCustomer = (id) => {
-  customers.value = customers.value.filter((customer) => customer.id !== id);
-  showMessage('Customer deleted successfully!');
-  if (customerToEdit.value && customerToEdit.value.id === id) {
-    handleCancelEdit();
+const handleDeleteCustomer = async (id) => {
+  try {
+    // Call the backend API to delete from Google Sheets
+    await GoogleSheetService.deleteCustomer(id);
+    // Remove from local state after successful API call
+    customers.value = customers.value.filter((customer) => customer.id !== id);
+    showMessage('Customer deleted successfully!');
+    if (customerToEdit.value && customerToEdit.value.id === id) {
+      handleCancelEdit();
+    }
+  } catch (error) {
+    showMessage('Failed to delete customer from Google Sheet.');
+    console.error(error);
   }
 };
 
