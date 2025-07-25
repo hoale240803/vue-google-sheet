@@ -21,12 +21,30 @@ export default {
       throw error;
     }
   },
+  async deleteCustomer(customerId: number) {
+    try {
+      const response = await axios.delete(`${API_BASE_URL}/sheet/${customerId}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error deleting customer:', error);
+      throw error;
+    }
+  },
   async updateCustomer(customerId: number, customer: { name: string; email: string; transactionAmount: number, phone: string, address: string }) {
     try {
       const response = await axios.put(`${API_BASE_URL}/sheet/${customerId}`, customer);
       return response.data;
     } catch (error) {
       console.error('Error updating customer:', error);
+      throw error;
+    }
+  },
+  async deleteCustomer(customerId: number) {
+    try {
+      const response = await axios.delete(`${API_BASE_URL}/sheet/${customerId}`);
+      return response.data;
+    } catch (error) {
+      console.error('Error deleting customer:', error);
       throw error;
     }
   },
