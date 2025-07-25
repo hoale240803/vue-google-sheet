@@ -42,15 +42,26 @@
       <div>
         <label for="phone" class="block text-sm font-medium text-gray-700 mb-1">Phone</label>
         <input
-          type="number"
+          type="tel"
           id="phone"
           name="phone"
-          v-model.number="formCustomer.phone"
-          step="0.01"
+          v-model="formCustomer.phone"
           class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
-          placeholder="Enter phone"
+          placeholder="Enter phone number"
           required
         />
+      </div>
+      <div>
+        <label for="address" class="block text-sm font-medium text-gray-700 mb-1">Address</label>
+        <textarea
+          id="address"
+          name="address"
+          v-model="formCustomer.address"
+          rows="2"
+          class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+          placeholder="Enter customer address"
+          required
+        ></textarea>
       </div>
       <div class="flex justify-end space-x-3">
         <button
@@ -82,7 +93,7 @@ export default {
   data() {
     return {
       // Internal form state, initialized from props or new customer template
-      formCustomer: { id: null, name: '', email: '', transactionAmount: null },
+      formCustomer: { id: null, name: '', email: '', transactionAmount: null, phone: '', address: '' },
     };
   },
   watch: {
@@ -92,7 +103,7 @@ export default {
         if (newVal) {
           this.formCustomer = { ...newVal };
         } else {
-          this.formCustomer = { id: null, name: '', email: '', transactionAmount: null };
+          this.formCustomer = { id: null, name: '', email: '', transactionAmount: null, phone: '', address: '' };
         }
       },
       immediate: true, // Run handler immediately on component creation
@@ -108,7 +119,7 @@ export default {
   methods: {
     // Handles form submission, performs validation, and emits 'save-customer'
     handleSubmit() {
-      if (!this.formCustomer.name || !this.formCustomer.email || this.formCustomer.transactionAmount === null || this.formCustomer.transactionAmount === '') {
+      if (!this.formCustomer.name || !this.formCustomer.email || !this.formCustomer.phone || !this.formCustomer.address || this.formCustomer.transactionAmount === null || this.formCustomer.transactionAmount === '') {
         this.$emit('show-message', 'Please fill in all customer fields.');
         return;
       }
@@ -123,7 +134,7 @@ export default {
     },
     // Resets the form inputs to their initial empty state
     resetForm() {
-      this.formCustomer = { id: null, name: '', email: '', transactionAmount: null };
+      this.formCustomer = { id: null, name: '', email: '', transactionAmount: null, phone: '', address: '' };
     },
     // Handles cancelling the edit operation, emits 'cancel-edit'
     handleCancel() {

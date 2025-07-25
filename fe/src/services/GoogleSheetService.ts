@@ -21,5 +21,14 @@ export default {
       throw error;
     }
   },
+  async updateCustomer(customerId: number, customer: { name: string; email: string; transactionAmount: number, phone: string, address: string }) {
+    try {
+      const response = await axios.put(`${API_BASE_URL}/sheet/${customerId}`, customer);
+      return response.data;
+    } catch (error) {
+      console.error('Error updating customer:', error);
+      throw error;
+    }
+  },
   // You can add more methods here for POST/PUT/DELETE if needed
 };

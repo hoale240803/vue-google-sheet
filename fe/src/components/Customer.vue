@@ -135,10 +135,33 @@ const showMessage = (text) => {
 
 const handleSaveCustomer = async (customerData) => {
   if (isEditing.value) {
-    customers.value = customers.value.map((cust) =>
-      cust.id === customerData.id ? { ...customerData } : cust
-    );
-    showMessage('Customer updated successfully!');
+    try {
+      // Call the API to update the customer in Google Sheets
+      await GoogleSheetService.updateCustomer(customerData.id, {
+        name: customerData.name,
+        email: customerData.email,
+        phone: customerData.phone,
+        address: customerData.address || 'temp',
+        transactionAmount: customerData.transactionAmount
+      });
+      
+      // Update local state
+      customers.value = customers.value.map((cust) =>
+        cust.id === customerData.id ? { ...customerData } : cust
+      );
+      showMessage('Customer updated successfully!');
+      
+      // Optionally, refresh the list from backend to ensure consistency
+      const data = await GoogleSheetService.fetchSheetData();
+      customers.value = data.map((customer, idx) => ({
+        ...customer,
+        id: Number(customer.id),
+        transactionAmount: Number(customer.transactionAmount) || 0,
+      }));
+    } catch (error) {
+      showMessage('Failed to update customer in Google Sheet.');
+      console.error('Update error:', error);
+    }
   } else {
     try {
       // Find max id in current customers

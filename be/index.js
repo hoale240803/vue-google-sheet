@@ -80,6 +80,55 @@ async function appendToSheet(values) {
   });
 }
 
+async function updateSheetRow(rowIndex, values) {
+  const auth = new google.auth.GoogleAuth({
+    credentials: serviceAccount,
+    scopes: ["https://www.googleapis.com/auth/spreadsheets"],
+  });
+  const sheets = google.sheets({ version: "v4", auth });
+  const spreadsheetId = process.env.SPREADSHEET_ID;
+  
+  // Row index is 1-based in Google Sheets, and we need to skip the header row
+  // So if we want to update customer with id=1, it should be in row 2 (1-based)
+  const range = `Sheet1!A${rowIndex + 1}:F${rowIndex + 1}`; // Assuming 6 columns (A-F)
+
+  await sheets.spreadsheets.values.update({
+    spreadsheetId,
+    range,
+    valueInputOption: "USER_ENTERED",
+    requestBody: { values: [values] },
+  });
+}
+
+async function findCustomerRowIndex(customerId) {
+  const auth = new google.auth.GoogleAuth({
+    credentials: serviceAccount,
+    scopes: ["https://www.googleapis.com/auth/spreadsheets"],
+  });
+  const sheets = google.sheets({ version: "v4", auth });
+  const spreadsheetId = process.env.SPREADSHEET_ID;
+  const range = process.env.SHEET_RANGE;
+
+  const response = await sheets.spreadsheets.values.get({
+    spreadsheetId,
+    range,
+  });
+
+  const values = response.data.values;
+  if (!values || values.length <= 1) {
+    return -1; // No data or only headers
+  }
+
+  // Skip header row (index 0), search from row 1 onwards
+  for (let i = 1; i < values.length; i++) {
+    if (values[i][0] && values[i][0].toString() === customerId.toString()) {
+      return i + 1; // Return 1-based row index for Google Sheets
+    }
+  }
+  
+  return -1; // Customer not found
+}
+
 app.post("/api/sheet", async (req, res) => {
   const { id, name, email, phone, address, transactionAmount } = req.body;
   if (
@@ -98,6 +147,37 @@ app.post("/api/sheet", async (req, res) => {
   } catch (error) {
     console.error("Error adding customer:", error);
     res.status(500).json({ error: "Failed to add customer" });
+  }
+});
+
+app.put("/api/sheet/:id", async (req, res) => {
+  const customerId = req.params.id;
+  const { name, email, phone, address, transactionAmount } = req.body;
+  
+  if (
+    !name ||
+    !email ||
+    !phone ||
+    !address ||
+    transactionAmount === undefined
+  ) {
+    return res.status(400).json({ error: "Missing required fields" });
+  }
+  
+  try {
+    // Find the row index for this customer
+    const rowIndex = await findCustomerRowIndex(customerId);
+    
+    if (rowIndex === -1) {
+      return res.status(404).json({ error: "Customer not found" });
+    }
+    
+    // Update the row with new values
+    await updateSheetRow(rowIndex, [customerId, name, email, phone, address, transactionAmount]);
+    res.status(200).json({ message: "Customer updated successfully" });
+  } catch (error) {
+    console.error("Error updating customer:", error);
+    res.status(500).json({ error: "Failed to update customer" });
   }
 });
 
