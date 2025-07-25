@@ -3,9 +3,25 @@ import axios from 'axios';
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL;
 
 export default {
-  async fetchSheetData() {
+  async fetchSheetData(filters = {}) {
     try {
-      const response = await axios.get(`${API_BASE_URL}/sheet`);
+      const params = new URLSearchParams();
+      
+      // Add query parameters if provided
+      if (filters.search) {
+        params.append('search', filters.search);
+      }
+      if (filters.minAmount !== null && filters.minAmount !== undefined) {
+        params.append('minAmount', filters.minAmount.toString());
+      }
+      if (filters.maxAmount !== null && filters.maxAmount !== undefined) {
+        params.append('maxAmount', filters.maxAmount.toString());
+      }
+      
+      const queryString = params.toString();
+      const url = `${API_BASE_URL}/sheet${queryString ? `?${queryString}` : ''}`;
+      
+      const response = await axios.get(url);
       return response.data;
     } catch (error) {
       console.error('Error fetching sheet data:', error);
@@ -36,15 +52,6 @@ export default {
       return response.data;
     } catch (error) {
       console.error('Error updating customer:', error);
-      throw error;
-    }
-  },
-  async deleteCustomer(customerId: number) {
-    try {
-      const response = await axios.delete(`${API_BASE_URL}/sheet/${customerId}`);
-      return response.data;
-    } catch (error) {
-      console.error('Error deleting customer:', error);
       throw error;
     }
   },

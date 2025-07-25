@@ -43,18 +43,47 @@ app.get("/api/sheet", async (req, res) => {
   const { GOOGLE_API_KEY, SPREADSHEET_ID, SHEET_RANGE } = process.env;
   const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${SHEET_RANGE}?key=${GOOGLE_API_KEY}`;
 
+  // Extract query parameters for filtering
+  const { search, minAmount, maxAmount } = req.query;
+
   try {
     const response = await axios.get(url);
     const values = response.data.values;
 
     const headers = values[0];
-    const rows = values.slice(1).map((row) => {
+    let rows = values.slice(1).map((row) => {
       let obj = {};
       headers.forEach((header, i) => {
         obj[header] = row[i] || "";
       });
       return normalizeKeysToCamelCase(obj);
     });
+
+    // Apply server-side filtering based on query parameters
+    if (search || minAmount || maxAmount) {
+      rows = rows.filter((row) => {
+        // Search filter: check if search term matches name or email (case-insensitive)
+        let matchesSearch = true;
+        if (search) {
+          const searchLower = search.toLowerCase();
+          matchesSearch = 
+            (row.name && row.name.toLowerCase().includes(searchLower)) ||
+            (row.email && row.email.toLowerCase().includes(searchLower));
+        }
+
+        // Transaction amount filters
+        let matchesAmount = true;
+        if (minAmount || maxAmount) {
+          const transactionAmount = parseFloat(row.transactionAmount) || 0;
+          const min = minAmount ? parseFloat(minAmount) : -Infinity;
+          const max = maxAmount ? parseFloat(maxAmount) : Infinity;
+          
+          matchesAmount = transactionAmount >= min && transactionAmount <= max;
+        }
+
+        return matchesSearch && matchesAmount;
+      });
+    }
 
     res.json(rows);
   } catch (error) {
@@ -73,79 +102,6 @@ async function appendToSheet(values) {
   const range = "Sheet1"; // or your actual sheet name
 
   await sheets.spreadsheets.values.append({
-    spreadsheetId,
-    range,
-    valueInputOption: "USER_ENTERED",
-    requestBody: { values: [values] },
-  });
-}
-
-async function deleteFromSheet(customerId) {
-  const auth = new google.auth.GoogleAuth({
-    credentials: serviceAccount,
-    scopes: ["https://www.googleapis.com/auth/spreadsheets"],
-  });
-  const sheets = google.sheets({ version: "v4", auth });
-  const spreadsheetId = process.env.SPREADSHEET_ID;
-
-  // First, get all data to find the row number
-  const response = await sheets.spreadsheets.values.get({
-    spreadsheetId,
-    range: "Sheet1!A:Z",
-  });
-
-  const values = response.data.values;
-  if (!values || values.length === 0) {
-    throw new Error("No data found in sheet");
-  }
-
-  // Find the row with matching customer ID (assuming ID is in column A)
-  let rowToDelete = -1;
-  for (let i = 1; i < values.length; i++) {
-    // Start from 1 to skip header
-    if (values[i][0] === String(customerId)) {
-      rowToDelete = i + 1; // Google Sheets is 1-indexed
-      break;
-    }
-  }
-
-  if (rowToDelete === -1) {
-    throw new Error(`Customer with ID ${customerId} not found`);
-  }
-
-  // Delete the row
-  await sheets.spreadsheets.batchUpdate({
-    spreadsheetId,
-    requestBody: {
-      requests: [
-        {
-          deleteDimension: {
-            range: {
-              sheetId: 0, // assuming first sheet
-              dimension: "ROWS",
-              startIndex: rowToDelete - 1, // 0-indexed for API
-              endIndex: rowToDelete, // exclusive end
-            },
-          },
-        },
-      ],
-    },
-  });
-}
-
-async function updateSheetRow(rowIndex, values) {
-  const auth = new google.auth.GoogleAuth({
-    credentials: serviceAccount,
-    scopes: ["https://www.googleapis.com/auth/spreadsheets"],
-  });
-  const sheets = google.sheets({ version: "v4", auth });
-  const spreadsheetId = process.env.SPREADSHEET_ID;
-
-  // Row index is 1-based in Google Sheets, and we need to skip the header row
-  // So if we want to update customer with id=1, it should be in row 2 (1-based)
-  const range = `Sheet1!A${rowIndex + 1}:F${rowIndex + 1}`; // Assuming 6 columns (A-F)
-
-  await sheets.spreadsheets.values.update({
     spreadsheetId,
     range,
     valueInputOption: "USER_ENTERED",
@@ -305,20 +261,6 @@ app.put("/api/sheet/:id", async (req, res) => {
   } catch (error) {
     console.error("Error updating customer:", error);
     res.status(500).json({ error: "Failed to update customer" });
-  }
-});
-
-app.delete("/api/sheet/:id", async (req, res) => {
-  const customerId = req.params.id;
-  if (!customerId) {
-    return res.status(400).json({ error: "Customer ID is required" });
-  }
-  try {
-    await deleteFromSheet(customerId);
-    res.status(200).json({ message: "Customer deleted successfully" });
-  } catch (error) {
-    console.error("Error deleting customer:", error);
-    res.status(500).json({ error: "Failed to delete customer" });
   }
 });
 

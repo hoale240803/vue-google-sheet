@@ -35,7 +35,7 @@
 
 
 <script setup>
-import { computed, onMounted, ref } from 'vue';
+import { onMounted, ref, watch } from 'vue';
 import GoogleSheetService from '../services/GoogleSheetService.ts';
 import CustomerForm from './CustomerForm.vue';
 import CustomerList from './CustomerList.vue';
@@ -44,6 +44,7 @@ import SearchFilter from './SearchFilter.vue';
 
 // Reactive state
 const customers = ref([]);
+const filteredCustomers = ref([]);
 const searchQuery = ref('');
 const minAmount = ref(null);
 const maxAmount = ref(null);
@@ -52,45 +53,47 @@ const isEditing = ref(false);
 const message = ref('');
 let messageTimeout = null;
 
-// Computed property for filtered customers
-const filteredCustomers = computed(() => {
-
-  console.log("customers at filter", customers.value);
-  
-  return customers.value.filter((customer) => {
-    const matchesSearch =
-      customer.name?.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-      customer.email?.toLowerCase().includes(searchQuery.value.toLowerCase());
-
-    const customerAmount = customer.transactionAmount;
-    const min = parseFloat(minAmount.value);
-    const max = parseFloat(maxAmount.value);
-
-    const matchesAmount =
-      (isNaN(min) || customerAmount >= min) && (isNaN(max) || customerAmount <= max);
-
-    return matchesSearch && matchesAmount;
-  });
-});
-
-onMounted(async () => {
+// Function to fetch customers with current filters
+const fetchCustomersWithFilters = async () => {
   try {
-    const data = await GoogleSheetService.fetchSheetData();
-    // Optionally, parse transactionAmount to number if needed
-    console.log("data", data);
+    const filters = {
+      search: searchQuery.value || '',
+      minAmount: minAmount.value,
+      maxAmount: maxAmount.value
+    };
     
+    // Remove empty/null filter values
+    Object.keys(filters).forEach(key => {
+      if (filters[key] === '' || filters[key] === null || filters[key] === undefined) {
+        delete filters[key];
+      }
+    });
     
-    customers.value = data.map((customer, idx) => ({
+    const data = await GoogleSheetService.fetchSheetData(filters);
+    
+    filteredCustomers.value = data.map((customer, idx) => ({
       ...customer,
       id: customer.id || idx + 1,
       transactionAmount: Number(customer.transactionAmount) || 0,
     }));
-
-    console.log(customers.value);
+    
+    // Also update the main customers array for other operations
+    customers.value = [...filteredCustomers.value];
     
   } catch (error) {
     showMessage('Failed to fetch customers from Google Sheet.');
+    console.error('Fetch error:', error);
   }
+};
+
+// Watch for changes in filter inputs and refetch data
+watch([searchQuery, minAmount, maxAmount], () => {
+  fetchCustomersWithFilters();
+});
+
+onMounted(async () => {
+  // Initial fetch without filters
+  await fetchCustomersWithFilters();
 });
 
 // For debugging: try to add a hardcoded valid customer
@@ -151,13 +154,8 @@ const handleSaveCustomer = async (customerData) => {
       );
       showMessage('Customer updated successfully!');
       
-      // Optionally, refresh the list from backend to ensure consistency
-      const data = await GoogleSheetService.fetchSheetData();
-      customers.value = data.map((customer, idx) => ({
-        ...customer,
-        id: Number(customer.id),
-        transactionAmount: Number(customer.transactionAmount) || 0,
-      }));
+      // Refresh the filtered list
+      await fetchCustomersWithFilters();
     } catch (error) {
       showMessage('Failed to update customer in Google Sheet.');
       console.error('Update error:', error);
@@ -177,13 +175,8 @@ const handleSaveCustomer = async (customerData) => {
         address: customerData.address || 'temp'
       });
       showMessage('Customer added successfully!');
-      // Optionally, refresh the list from backend
-      const data = await GoogleSheetService.fetchSheetData();
-      customers.value = data.map((customer, idx) => ({
-        ...customer,
-        id: Number(customer.id),
-        transactionAmount: Number(customer.transactionAmount) || 0,
-      }));
+      // Refresh the filtered list
+      await fetchCustomersWithFilters();
     } catch (error) {
       showMessage('Failed to add customer to Google Sheet.');
     } 
@@ -201,9 +194,11 @@ const handleDeleteCustomer = async (id) => {
   try {
     // Call the backend API to delete from Google Sheets
     await GoogleSheetService.deleteCustomer(id);
-    // Remove from local state after successful API call
-    customers.value = customers.value.filter((customer) => customer.id !== id);
     showMessage('Customer deleted successfully!');
+    
+    // Refresh the filtered list
+    await fetchCustomersWithFilters();
+    
     if (customerToEdit.value && customerToEdit.value.id === id) {
       handleCancelEdit();
     }
