@@ -80,6 +80,59 @@ async function appendToSheet(values) {
   });
 }
 
+async function deleteFromSheet(customerId) {
+  const auth = new google.auth.GoogleAuth({
+    credentials: serviceAccount,
+    scopes: ["https://www.googleapis.com/auth/spreadsheets"],
+  });
+  const sheets = google.sheets({ version: "v4", auth });
+  const spreadsheetId = process.env.SPREADSHEET_ID;
+
+  // First, get all data to find the row number
+  const response = await sheets.spreadsheets.values.get({
+    spreadsheetId,
+    range: "Sheet1!A:Z",
+  });
+
+  const values = response.data.values;
+  if (!values || values.length === 0) {
+    throw new Error("No data found in sheet");
+  }
+
+  // Find the row with matching customer ID (assuming ID is in column A)
+  let rowToDelete = -1;
+  for (let i = 1; i < values.length; i++) {
+    // Start from 1 to skip header
+    if (values[i][0] === String(customerId)) {
+      rowToDelete = i + 1; // Google Sheets is 1-indexed
+      break;
+    }
+  }
+
+  if (rowToDelete === -1) {
+    throw new Error(`Customer with ID ${customerId} not found`);
+  }
+
+  // Delete the row
+  await sheets.spreadsheets.batchUpdate({
+    spreadsheetId,
+    requestBody: {
+      requests: [
+        {
+          deleteDimension: {
+            range: {
+              sheetId: 0, // assuming first sheet
+              dimension: "ROWS",
+              startIndex: rowToDelete - 1, // 0-indexed for API
+              endIndex: rowToDelete, // exclusive end
+            },
+          },
+        },
+      ],
+    },
+  });
+}
+
 async function updateSheetRow(rowIndex, values) {
   const auth = new google.auth.GoogleAuth({
     credentials: serviceAccount,
@@ -200,6 +253,20 @@ app.post("/api/sheet", async (req, res) => {
   } catch (error) {
     console.error("Error adding customer:", error);
     res.status(500).json({ error: "Failed to add customer" });
+  }
+});
+
+app.delete("/api/sheet/:id", async (req, res) => {
+  const customerId = req.params.id;
+  if (!customerId) {
+    return res.status(400).json({ error: "Customer ID is required" });
+  }
+  try {
+    await deleteFromSheet(customerId);
+    res.status(200).json({ message: "Customer deleted successfully" });
+  } catch (error) {
+    console.error("Error deleting customer:", error);
+    res.status(500).json({ error: "Failed to delete customer" });
   }
 });
 
