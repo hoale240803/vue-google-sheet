@@ -1,6 +1,5 @@
 <template>
-  <div class="bg-white p-8 rounded-xl shadow-lg w-full max-w-2xl mb-8">
-    <h2 class="text-2xl font-semibold text-gray-700 mb-6">{{ isEditing ? 'Edit Customer' : 'Add New Customer' }}</h2>
+  <div class="w-full">
     <form @submit.prevent="handleSubmit" class="space-y-4">
       <div>
         <label for="name" class="block text-sm font-medium text-gray-700 mb-1">Name</label>

@@ -7,15 +7,6 @@
       <!-- Page Title -->
       <h1 class="text-4xl font-bold text-gray-800 mb-8 mt-2 text-center">Customer Management (Vue.js)</h1>
 
-      <!-- Customer Form Component -->
-      <CustomerForm
-        :customer-to-edit="customerToEdit"
-        :is-editing="isEditing"
-        @save-customer="handleSaveCustomer"
-        @cancel-edit="handleCancelEdit"
-        @show-message="showMessage"
-      />
-
       <!-- Search and Filter Component -->
       <SearchFilter
         v-model:search-query="searchQuery"
@@ -26,9 +17,25 @@
       <!-- Customer List Component -->
       <CustomerList
         :customers="filteredCustomers"
+        @add-customer="handleAddCustomer"
         @edit-customer="handleEditCustomer"
         @delete-customer="handleDeleteCustomer"
       />
+
+      <!-- Modal for Customer Form -->
+      <Modal 
+        :is-visible="showModal" 
+        :title="isEditing ? 'Edit Customer' : 'Add New Customer'"
+        @close="handleCloseModal"
+      >
+        <CustomerForm
+          :customer-to-edit="customerToEdit"
+          :is-editing="isEditing"
+          @save-customer="handleSaveCustomer"
+          @cancel-edit="handleCancelEdit"
+          @show-message="showMessage"
+        />
+      </Modal>
     </div>
   </div>
 </template>
@@ -41,6 +48,7 @@ import CustomerForm from './CustomerForm.vue';
 import CustomerList from './CustomerList.vue';
 import MessageBox from './MessageBox.vue';
 import SearchFilter from './SearchFilter.vue';
+import Modal from './Modal.vue';
 
 // Reactive state
 const customers = ref([]);
@@ -49,6 +57,7 @@ const minAmount = ref(null);
 const maxAmount = ref(null);
 const customerToEdit = ref(null);
 const isEditing = ref(false);
+const showModal = ref(false);
 const message = ref('');
 let messageTimeout = null;
 
@@ -190,11 +199,25 @@ const handleSaveCustomer = async (customerData) => {
   }
   isEditing.value = false;
   customerToEdit.value = null;
+  showModal.value = false;
+};
+
+const handleAddCustomer = () => {
+  customerToEdit.value = null;
+  isEditing.value = false;
+  showModal.value = true;
 };
 
 const handleEditCustomer = (customer) => {
   customerToEdit.value = { ...customer };
   isEditing.value = true;
+  showModal.value = true;
+};
+
+const handleCloseModal = () => {
+  showModal.value = false;
+  isEditing.value = false;
+  customerToEdit.value = null;
 };
 
 const handleDeleteCustomer = async (id) => {
@@ -216,6 +239,7 @@ const handleDeleteCustomer = async (id) => {
 const handleCancelEdit = () => {
   isEditing.value = false;
   customerToEdit.value = null;
+  showModal.value = false;
 };
 </script>
 
