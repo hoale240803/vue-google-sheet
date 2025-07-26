@@ -24,6 +24,12 @@
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">\${{ customer.transactionAmount.toFixed(2) }}</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
               <button
+                @click="viewDetails(customer)"
+                class="text-blue-600 hover:text-blue-900 mr-4 transition duration-150 ease-in-out"
+              >
+                Details
+              </button>
+              <button
                 @click="editCustomer(customer)"
                 class="text-indigo-600 hover:text-indigo-900 mr-4 transition duration-150 ease-in-out"
               >
@@ -49,6 +55,10 @@ export default {
   name: 'CustomerList',
   props: ['customers'],
   methods: {
+    // Emits 'view-details' event with the customer object
+    viewDetails(customer) {
+      this.$emit('view-details', customer);
+    },
     // Emits 'edit-customer' event with the customer object
     editCustomer(customer) {
       this.$emit('edit-customer', customer);
