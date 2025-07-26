@@ -42,13 +42,18 @@ try {
 app.get("/api/sheet", async (req, res) => {
   const { GOOGLE_API_KEY, SPREADSHEET_ID, SHEET_RANGE } = process.env;
   const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${SHEET_RANGE}?key=${GOOGLE_API_KEY}`;
+  
+  // Parse pagination parameters
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 10;
+  const startIndex = (page - 1) * limit;
 
   try {
     const response = await axios.get(url);
     const values = response.data.values;
 
     const headers = values[0];
-    const rows = values.slice(1).map((row) => {
+    const allRows = values.slice(1).map((row) => {
       let obj = {};
       headers.forEach((header, i) => {
         obj[header] = row[i] || "";
@@ -56,7 +61,23 @@ app.get("/api/sheet", async (req, res) => {
       return normalizeKeysToCamelCase(obj);
     });
 
-    res.json(rows);
+    // Apply pagination
+    const totalItems = allRows.length;
+    const totalPages = Math.ceil(totalItems / limit);
+    const paginatedRows = allRows.slice(startIndex, startIndex + limit);
+
+    // Return paginated response
+    res.json({
+      data: paginatedRows,
+      pagination: {
+        currentPage: page,
+        totalPages: totalPages,
+        totalItems: totalItems,
+        itemsPerPage: limit,
+        hasNextPage: page < totalPages,
+        hasPreviousPage: page > 1
+      }
+    });
   } catch (error) {
     console.error("Error fetching sheet data:", error.message);
     res.status(500).json({ error: "Failed to fetch sheet data" });
@@ -182,60 +203,7 @@ async function findCustomerRowIndex(customerId) {
   return -1; // Customer not found
 }
 
-async function deleteFromSheet(customerId) {
-  const auth = new google.auth.GoogleAuth({
-    credentials: serviceAccount,
-    scopes: ["https://www.googleapis.com/auth/spreadsheets"],
-  });
-  const sheets = google.sheets({ version: "v4", auth });
-  const spreadsheetId = process.env.SPREADSHEET_ID;
 
-  // First, get all data to find the row number
-  const response = await sheets.spreadsheets.values.get({
-    spreadsheetId,
-    range: "Sheet1!A:Z",
-  });
-
-  const values = response.data.values;
-  if (!values || values.length === 0) {
-    throw new Error("No data found in sheet");
-  }
-
-  // Find the row with matching customer ID (assuming ID is in column A)
-  let rowToDelete = -1;
-  for (let i = 1; i < values.length; i++) {
-    // Start from 1 to skip header
-    if (values[i][0] === String(customerId)) {
-      rowToDelete = i + 1; // Google Sheets is 1-indexed
-      break;
-    }
-  }
-
-  if (rowToDelete === -1) {
-    throw new Error(`Customer with ID ${customerId} not found`);
-  }
-
-  // Delete the row
-  await sheets.spreadsheets.batchUpdate({
-    spreadsheetId,
-    requestBody: {
-      requests: [
-        {
-          deleteDimension: {
-            range: {
-              sheetId: 0, // assuming first sheet
-              dimension: "ROWS",
-              startIndex: rowToDelete - 1, // 0-indexed for API
-              endIndex: rowToDelete, // exclusive end
-            },
-          },
-        },
-      ],
-    },
-  });
-}
-
-app.post("/api/sheet", async (req, res) => {
   const { id, name, email, phone, address, transactionAmount } = req.body;
   if (
     !id ||
@@ -305,20 +273,6 @@ app.put("/api/sheet/:id", async (req, res) => {
   } catch (error) {
     console.error("Error updating customer:", error);
     res.status(500).json({ error: "Failed to update customer" });
-  }
-});
-
-app.delete("/api/sheet/:id", async (req, res) => {
-  const customerId = req.params.id;
-  if (!customerId) {
-    return res.status(400).json({ error: "Customer ID is required" });
-  }
-  try {
-    await deleteFromSheet(customerId);
-    res.status(200).json({ message: "Customer deleted successfully" });
-  } catch (error) {
-    console.error("Error deleting customer:", error);
-    res.status(500).json({ error: "Failed to delete customer" });
   }
 });
 

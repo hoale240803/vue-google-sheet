@@ -29,6 +29,18 @@
         @edit-customer="handleEditCustomer"
         @delete-customer="handleDeleteCustomer"
       />
+
+      <!-- Pagination Component -->
+      <Pagination
+        :current-page="currentPage"
+        :total-pages="totalPages"
+        :total-items="totalItems"
+        :items-per-page="itemsPerPage"
+        :has-next-page="hasNextPage"
+        :has-previous-page="hasPreviousPage"
+        @page-change="handlePageChange"
+        @items-per-page-change="handleItemsPerPageChange"
+      />
     </div>
   </div>
 </template>
@@ -41,6 +53,7 @@ import CustomerForm from './CustomerForm.vue';
 import CustomerList from './CustomerList.vue';
 import MessageBox from './MessageBox.vue';
 import SearchFilter from './SearchFilter.vue';
+import Pagination from './Pagination.vue';
 
 // Reactive state
 const customers = ref([]);
@@ -52,12 +65,20 @@ const isEditing = ref(false);
 const message = ref('');
 let messageTimeout = null;
 
-// Computed property for filtered customers
-const filteredCustomers = computed(() => {
+// Pagination state
+const currentPage = ref(1);
+const itemsPerPage = ref(10);
+const totalPages = ref(1);
+const totalItems = ref(0);
+const hasNextPage = ref(false);
+const hasPreviousPage = ref(false);
+const paginatedCustomers = ref([]);
 
-  console.log("customers at filter", customers.value);
+// Computed property for filtered customers (applied to current page data)
+const filteredCustomers = computed(() => {
+  console.log("customers at filter", paginatedCustomers.value);
   
-  return customers.value.filter((customer) => {
+  return paginatedCustomers.value.filter((customer) => {
     const matchesSearch =
       customer.name?.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
       customer.email?.toLowerCase().includes(searchQuery.value.toLowerCase());
@@ -73,25 +94,57 @@ const filteredCustomers = computed(() => {
   });
 });
 
-onMounted(async () => {
+// Load paginated data
+const loadPaginatedData = async (page = 1, limit = 10) => {
   try {
-    const data = await GoogleSheetService.fetchSheetData();
-    // Optionally, parse transactionAmount to number if needed
-    console.log("data", data);
+    const data = await GoogleSheetService.fetchSheetDataPaginated(page, limit);
+    console.log("paginated data", data);
     
-    
-    customers.value = data.map((customer, idx) => ({
-      ...customer,
-      id: customer.id || idx + 1,
-      transactionAmount: Number(customer.transactionAmount) || 0,
-    }));
-
-    console.log(customers.value);
-    
+    if (data.data) {
+      // New paginated response format
+      paginatedCustomers.value = data.data.map((customer, idx) => ({
+        ...customer,
+        id: customer.id || idx + 1,
+        transactionAmount: Number(customer.transactionAmount) || 0,
+      }));
+      
+      // Update pagination info
+      const pagination = data.pagination;
+      currentPage.value = pagination.currentPage;
+      totalPages.value = pagination.totalPages;
+      totalItems.value = pagination.totalItems;
+      hasNextPage.value = pagination.hasNextPage;
+      hasPreviousPage.value = pagination.hasPreviousPage;
+      itemsPerPage.value = pagination.itemsPerPage;
+    } else {
+      // Fallback to old format if no pagination data
+      paginatedCustomers.value = data.map((customer, idx) => ({
+        ...customer,
+        id: customer.id || idx + 1,
+        transactionAmount: Number(customer.transactionAmount) || 0,
+      }));
+    }
   } catch (error) {
     showMessage('Failed to fetch customers from Google Sheet.');
+    console.error('Error loading paginated data:', error);
   }
+};
+
+onMounted(async () => {
+  await loadPaginatedData(1, itemsPerPage.value);
 });
+
+// Pagination event handlers
+const handlePageChange = async (page) => {
+  currentPage.value = page;
+  await loadPaginatedData(page, itemsPerPage.value);
+};
+
+const handleItemsPerPageChange = async (newItemsPerPage) => {
+  itemsPerPage.value = newItemsPerPage;
+  currentPage.value = 1; // Reset to first page
+  await loadPaginatedData(1, newItemsPerPage);
+};
 
 // For debugging: try to add a hardcoded valid customer
 const addHardcodedCustomer = async () => {
@@ -136,7 +189,7 @@ const showMessage = (text) => {
 const handleSaveCustomer = async (customerData) => {
   if (isEditing.value) {
     try {
-      // Call the API to update the customer in Google Sheets
+      // Call the API to update the customer
       await GoogleSheetService.updateCustomer(customerData.id, {
         name: customerData.name,
         email: customerData.email,
@@ -145,31 +198,25 @@ const handleSaveCustomer = async (customerData) => {
         transactionAmount: customerData.transactionAmount
       });
       
-      // Update local state
-      customers.value = customers.value.map((cust) =>
-        cust.id === customerData.id ? { ...customerData } : cust
-      );
       showMessage('Customer updated successfully!');
       
-      // Optionally, refresh the list from backend to ensure consistency
-      const data = await GoogleSheetService.fetchSheetData();
-      customers.value = data.map((customer, idx) => ({
-        ...customer,
-        id: Number(customer.id),
-        transactionAmount: Number(customer.transactionAmount) || 0,
-      }));
+      // Refresh the current page
+      await loadPaginatedData(currentPage.value, itemsPerPage.value);
     } catch (error) {
-      showMessage('Failed to update customer in Google Sheet.');
+      showMessage('Failed to update customer.');
       console.error('Update error:', error);
     }
   } else {
     try {
-      // Find max id in current customers
-      const maxId = customers.value.length > 0 ? Math.max(...customers.value.map(c => Number(c.id) || 0)) : 0;
+      // Find max id across all customers (for proper ID generation)
+      const allCustomersResponse = await GoogleSheetService.fetchSheetData();
+      const allCustomers = Array.isArray(allCustomersResponse) ? allCustomersResponse : allCustomersResponse.data || [];
+      const maxId = allCustomers.length > 0 ? Math.max(...allCustomers.map(c => Number(c.id) || 0)) : 0;
       const customerId = maxId + 1;
-      // Send to backend to add to Google Sheet
+      
+      // Send to backend to add customer
       await GoogleSheetService.addCustomer({
-        id: customerId, // Add customerId field
+        id: customerId,
         name: customerData.name,
         phone: customerData.phone,
         email: customerData.email,
@@ -177,15 +224,12 @@ const handleSaveCustomer = async (customerData) => {
         address: customerData.address || 'temp'
       });
       showMessage('Customer added successfully!');
-      // Optionally, refresh the list from backend
-      const data = await GoogleSheetService.fetchSheetData();
-      customers.value = data.map((customer, idx) => ({
-        ...customer,
-        id: Number(customer.id),
-        transactionAmount: Number(customer.transactionAmount) || 0,
-      }));
+      
+      // Refresh the current page
+      await loadPaginatedData(currentPage.value, itemsPerPage.value);
     } catch (error) {
-      showMessage('Failed to add customer to Google Sheet.');
+      showMessage('Failed to add customer.');
+      console.error('Add error:', error);
     } 
   }
   isEditing.value = false;
@@ -199,16 +243,18 @@ const handleEditCustomer = (customer) => {
 
 const handleDeleteCustomer = async (id) => {
   try {
-    // Call the backend API to delete from Google Sheets
+    // Call the API to delete customer
     await GoogleSheetService.deleteCustomer(id);
-    // Remove from local state after successful API call
-    customers.value = customers.value.filter((customer) => customer.id !== id);
     showMessage('Customer deleted successfully!');
+    
+    // Refresh the current page
+    await loadPaginatedData(currentPage.value, itemsPerPage.value);
+    
     if (customerToEdit.value && customerToEdit.value.id === id) {
       handleCancelEdit();
     }
   } catch (error) {
-    showMessage('Failed to delete customer from Google Sheet.');
+    showMessage('Failed to delete customer.');
     console.error(error);
   }
 };
