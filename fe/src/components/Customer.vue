@@ -1,11 +1,14 @@
 <template>
-  <div class="customer-bg min-h-screen flex flex-col items-center justify-center py-12 px-4">
-    <div class="customer-card w-full max-w-4xl bg-white rounded-3xl shadow-2xl p-10 flex flex-col items-center">
+  <div class="customer-bg min-h-screen flex flex-col items-center justify-center py-12 px-4 bg-gradient-to-br from-purple-100 to-blue-100 dark:from-gray-900 dark:to-gray-800 transition-colors duration-300">
+    <!-- Theme Toggle Button -->
+    <ThemeToggle />
+    
+    <div class="customer-card w-full max-w-4xl bg-white dark:bg-gray-800 rounded-3xl shadow-2xl p-10 flex flex-col items-center border dark:border-gray-700 transition-colors duration-300">
       <!-- Message Box Component -->
       <MessageBox :message="message" />
 
       <!-- Page Title -->
-      <h1 class="text-4xl font-bold text-gray-800 mb-8 mt-2 text-center">Customer Management (Vue.js)</h1>
+      <h1 class="text-4xl font-bold text-gray-800 dark:text-white mb-8 mt-2 text-center">Customer Management (Vue.js)</h1>
 
       <!-- Customer Form Component -->
       <CustomerForm
@@ -41,6 +44,7 @@ import CustomerForm from './CustomerForm.vue';
 import CustomerList from './CustomerList.vue';
 import MessageBox from './MessageBox.vue';
 import SearchFilter from './SearchFilter.vue';
+import ThemeToggle from './ThemeToggle.vue';
 
 // Reactive state
 const customers = ref([]);
@@ -226,11 +230,9 @@ const handleCancelEdit = () => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #f3e8ff 0%, #e0e7ff 100%);
 }
 
 .customer-card {
-  background: #fff;
   border-radius: 2rem;
   box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
   padding: 2.5rem 2rem;
@@ -239,15 +241,7 @@ const handleCancelEdit = () => {
   margin: 2rem 0;
   display: flex;
   flex-direction: column;
-
   align-items: center;
-}
-
-h1 {
-  color: #3730a3;
-  margin-bottom: 2rem;
-  margin-top: 0.5rem;
-  text-align: center;
 }
 
 @media (max-width: 600px) {

@@ -1,64 +1,64 @@
 <template>
-  <div class="bg-white p-8 rounded-xl shadow-lg w-full max-w-2xl mb-8">
-    <h2 class="text-2xl font-semibold text-gray-700 mb-6">{{ isEditing ? 'Edit Customer' : 'Add New Customer' }}</h2>
+  <div class="bg-white dark:bg-gray-800 p-8 rounded-xl shadow-lg w-full max-w-2xl mb-8 border dark:border-gray-700 transition-colors duration-300">
+    <h2 class="text-2xl font-semibold text-gray-700 dark:text-gray-200 mb-6">{{ isEditing ? 'Edit Customer' : 'Add New Customer' }}</h2>
     <form @submit.prevent="handleSubmit" class="space-y-4">
       <div>
-        <label for="name" class="block text-sm font-medium text-gray-700 mb-1">Name</label>
+        <label for="name" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Name</label>
         <input
           type="text"
           id="name"
           name="name"
           v-model="formCustomer.name"
-          class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+          class="mt-1 block w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 transition-colors duration-200"
           placeholder="Enter customer name"
           required
         />
       </div>
       <div>
-        <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+        <label for="email" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
         <input
           type="email"
           id="email"
           name="email"
           v-model="formCustomer.email"
-          class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+          class="mt-1 block w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 transition-colors duration-200"
           placeholder="Enter customer email"
           required
         />
       </div>
       <div>
-        <label for="transactionAmount" class="block text-sm font-medium text-gray-700 mb-1">Transaction Amount</label>
+        <label for="transactionAmount" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Transaction Amount</label>
         <input
           type="number"
           id="transactionAmount"
           name="transactionAmount"
           v-model.number="formCustomer.transactionAmount"
           step="0.01"
-          class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+          class="mt-1 block w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 transition-colors duration-200"
           placeholder="Enter transaction amount"
           required
         />
       </div>
       <div>
-        <label for="phone" class="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+        <label for="phone" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Phone</label>
         <input
           type="tel"
           id="phone"
           name="phone"
           v-model="formCustomer.phone"
-          class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+          class="mt-1 block w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 transition-colors duration-200"
           placeholder="Enter phone number"
           required
         />
       </div>
       <div>
-        <label for="address" class="block text-sm font-medium text-gray-700 mb-1">Address</label>
+        <label for="address" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Address</label>
         <textarea
           id="address"
           name="address"
           v-model="formCustomer.address"
           rows="2"
-          class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"
+          class="mt-1 block w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 transition-colors duration-200"
           placeholder="Enter customer address"
           required
         ></textarea>
@@ -68,13 +68,13 @@
           v-if="isEditing"
           type="button"
           @click="handleCancel"
-          class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-gray-700 bg-gray-200 hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+          class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-gray-700 dark:text-gray-300 bg-gray-200 dark:bg-gray-600 hover:bg-gray-300 dark:hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 transition-colors duration-200"
         >
           Cancel Edit
         </button>
         <button
           type="submit"
-          class="inline-flex items-center px-6 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-150 ease-in-out"
+          class="inline-flex items-center px-6 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-700 dark:hover:bg-indigo-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200"
         >
           {{ isEditing ? 'Update Customer' : 'Add Customer' }}
         </button>
