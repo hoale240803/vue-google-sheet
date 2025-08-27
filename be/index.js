@@ -42,7 +42,7 @@ try {
 app.get("/api/sheet", async (req, res) => {
   const { GOOGLE_API_KEY, SPREADSHEET_ID, SHEET_RANGE } = process.env;
   const url = `https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values/${SHEET_RANGE}?key=${GOOGLE_API_KEY}`;
-  
+
   // Parse pagination parameters
   const page = parseInt(req.query.page) || 1;
   const limit = parseInt(req.query.limit) || 10;
@@ -75,8 +75,8 @@ app.get("/api/sheet", async (req, res) => {
         totalItems: totalItems,
         itemsPerPage: limit,
         hasNextPage: page < totalPages,
-        hasPreviousPage: page > 1
-      }
+        hasPreviousPage: page > 1,
+      },
     });
   } catch (error) {
     console.error("Error fetching sheet data:", error.message);
@@ -84,7 +84,7 @@ app.get("/api/sheet", async (req, res) => {
   }
 });
 
-async function appendToSheet(values) {
+function appendToSheet(values) {
   const auth = new google.auth.GoogleAuth({
     credentials: serviceAccount,
     scopes: ["https://www.googleapis.com/auth/spreadsheets"],
@@ -93,7 +93,7 @@ async function appendToSheet(values) {
   const spreadsheetId = process.env.SPREADSHEET_ID;
   const range = "Sheet1"; // or your actual sheet name
 
-  await sheets.spreadsheets.values.append({
+  sheets.spreadsheets.values.append({
     spreadsheetId,
     range,
     valueInputOption: "USER_ENTERED",
@@ -203,7 +203,7 @@ async function findCustomerRowIndex(customerId) {
   return -1; // Customer not found
 }
 
-
+app.post("/api/sheet", async (req, res) => {
   const { id, name, email, phone, address, transactionAmount } = req.body;
   if (
     !id ||
@@ -216,7 +216,7 @@ async function findCustomerRowIndex(customerId) {
     return res.status(400).json({ error: "Missing required fields" });
   }
   try {
-    await appendToSheet([id, name, email, phone, address, transactionAmount]);
+    appendToSheet([id, name, email, phone, address, transactionAmount]);
     res.status(201).json({ message: "Customer added successfully" });
   } catch (error) {
     console.error("Error adding customer:", error);
