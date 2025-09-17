@@ -28,6 +28,14 @@
         :customers="filteredCustomers"
         @edit-customer="handleEditCustomer"
         @delete-customer="handleDeleteCustomer"
+        @view-details="handleViewDetails"
+      />
+
+      <!-- Customer Detail Modal -->
+      <CustomerDetail
+        :customer="customerToView"
+        @close-details="handleCloseDetails"
+        @edit-customer="handleEditFromDetails"
       />
 
       <!-- Pagination Component -->
@@ -51,6 +59,7 @@ import { computed, onMounted, ref } from 'vue';
 import GoogleSheetService from '../services/GoogleSheetService.ts';
 import CustomerForm from './CustomerForm.vue';
 import CustomerList from './CustomerList.vue';
+import CustomerDetail from './CustomerDetail.vue';
 import MessageBox from './MessageBox.vue';
 import SearchFilter from './SearchFilter.vue';
 import Pagination from './Pagination.vue';
@@ -61,6 +70,7 @@ const searchQuery = ref('');
 const minAmount = ref(null);
 const maxAmount = ref(null);
 const customerToEdit = ref(null);
+const customerToView = ref(null);
 const isEditing = ref(false);
 const message = ref('');
 let messageTimeout = null;
@@ -262,6 +272,20 @@ const handleDeleteCustomer = async (id) => {
 const handleCancelEdit = () => {
   isEditing.value = false;
   customerToEdit.value = null;
+};
+
+const handleViewDetails = (customer) => {
+  customerToView.value = { ...customer };
+};
+
+const handleCloseDetails = () => {
+  customerToView.value = null;
+};
+
+const handleEditFromDetails = (customer) => {
+  customerToEdit.value = { ...customer };
+  isEditing.value = true;
+  customerToView.value = null;
 };
 </script>
 
